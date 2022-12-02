@@ -1,13 +1,28 @@
+#include "../../fftw-3.3.10/api/fftw3.h"
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "devices.h"
+
+#define FFTBUFFER 32
+
+u_int8_t append(double *adc_val_in, u_int8_t *current_entry,  u_int16_t adcVal, u_int8_t *filled){
+
+	adc_val_in[*current_entry] = adcVal;
+	*current_entry++;
+	if(*current_entry  == FFTBUFFER){
+		*current_entry = 0;
+		*filled = 1;
+	}
+	return *filled;
+}
 
 int main(int argc, char **argv) {
 
-	int SPI_fd,I2C_fd1,I2C_fd2;
+	int SPI_fd,I2C_fd;
 
 	u_int8_t i2cbuffer[17];
 
@@ -15,34 +30,40 @@ int main(int argc, char **argv) {
         u_int8_t data_out[3];
         u_int8_t data_in[3];
 
-	/* Open SPI device */
-        u_int8_t spi_mode = SPI_MODE_0;
-	SPI_fd= open("/dev/spidev0.0", O_RDWR);
-        if(SPI_fd ==-1) fprintf(stderr,"Error opening SPI device\n\r");
-        /* set spi mode to 0*/
-        if( ioctl(SPI_fd, SPI_IOC_WR_MODE,&spi_mode) <0) fprintf(stderr,"error setting spi mode\n\r");
+	//fft arrays
+	u_int8_t current_entry, filled;
+	u_int32_t n_out = ((FFTBUFFER/2) +1);
+	double *adc_val_in;
+	fftw_complex *fft_out;
 
-	/* set up SPI for transfer of 3 bytes(full duplex)*/
-        memset(&spi,0,sizeof(struct spi_ioc_transfer));
-        spi.tx_buf = (u_int32_t)&data_out;
-        spi.rx_buf = (u_int32_t)&data_in;
-        spi.len = 3;
-        spi.delay_usecs = 0;
-        spi.speed_hz = 1350000; //1.35MHz for 3.3V or 3.6MHz for 5v
-        spi.bits_per_word = 8;
-        spi.cs_change = 0;
+	//initilize SPI bus for ADC transfers and I2C bus for two displays
+	if( init_devices(&SPI_fd, &spi, data_out, data_in, &I2C_fd) < 0){
+		fprintf(stderr, "Error initilizing I2C or SPI\n");
+		return -1;
+	}
 
-	/* Open I2C devices */
-	I2C_fd1 = open("/dev/i2c-1", O_RDWR);
-	if(I2C_fd1 == -1) fprintf(stderr, "Error opening I2C device 1\n\r");
+	//setup for fourier transforms
 
-	I2C_fd2 = open("/dev/i2c-2", O_RDWR);
-	if(I2C_fd2 == -1) fprintf(stderr, "Error opening I2C device 2\n\r");
+	//create arrays
+	adc_val_in = (double*)fftw_malloc(sizeof(double) * FFTBUFFER);
+	fft_out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * n_out);
 
-	/* Set I2C addresses */
-	if(ioctl(I2C_fd1, I2C_SLAVE, 0x70) < 0) fprintf(stderr, "error setting I2C 1 address 0x70\n");
-	if(ioctl(I2C_fd2, I2C_SLAVE, 0x71) < 0) fprintf(stderr, "error setting I2C 2 address 0x71\n");
+	// append input array with ADC values, compute transform, display magnitudes
+	while(1){
 
-	
+		//read adc val from SPI bus
 
+		//append array
+		
+
+	}
+
+
+	//Shut down SPI and I2C devices
+	if( shutdown_devices(&SPI_fd, &I2C_fd) < 0){
+		fprintf(stderr, "Failed to close SPI or I2C fd\n");
+		return -1;
+	}
+	return 0;
 }
+
