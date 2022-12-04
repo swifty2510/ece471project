@@ -7,6 +7,30 @@
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
 
+double read_ADC(int *SPI_fd, struct spi_ioc_transfer *spi, u_int8_t *data_in, u_int8_t *data_out){
+	double adcVal;
+	int result, i;
+	//clear data buffer
+        for(i=0;i<3;i++){
+  	      data_out[i]=0;
+        }
+        //start bit
+        data_out[0]=1;
+        //ch5 single ended
+        data_out[1]=0xD0;
+        data_out[2]=0;
+        //send spi transaction
+        result= ioctl(*SPI_fd, SPI_IOC_MESSAGE(1), spi);
+        if(result==-1){
+		printf("Error sending spi transaction\n");
+		return -1.0;
+	}
+        //get 10 bits of data
+	adcVal = data_in[2]+((data_in[1]&0x3)<<8);
+	return adcVal;
+
+}
+
 int init_devices(int *SPI_fd, struct spi_ioc_transfer *spi, u_int8_t *data_out, u_int8_t *data_in, int *I2C_fd){
 	/* Open SPI device */
         u_int8_t spi_mode = SPI_MODE_0;
