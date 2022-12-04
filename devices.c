@@ -7,7 +7,7 @@
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
 
-double read_ADC(int *SPI_fd, struct spi_ioc_transfer *spi, u_int8_t *data_in, u_int8_t *data_out){
+double read_ADC(int SPI_fd, struct spi_ioc_transfer *spi, u_int8_t *data_in, u_int8_t *data_out){
 	double adcVal;
 	int result, i;
 	//clear data buffer
@@ -20,7 +20,7 @@ double read_ADC(int *SPI_fd, struct spi_ioc_transfer *spi, u_int8_t *data_in, u_
         data_out[1]=0xD0;
         data_out[2]=0;
         //send spi transaction
-        result= ioctl(*SPI_fd, SPI_IOC_MESSAGE(1), spi);
+        result= ioctl(SPI_fd, SPI_IOC_MESSAGE(1), spi);
         if(result==-1){
 		printf("Error sending spi transaction\n");
 		return -1.0;
