@@ -1,4 +1,4 @@
-#include "../../fftw-3.3.10/api/fftw3.h"
+#include "fftw3.h"
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "devices.h"
 
-#define FFTBUFFER 1024
+#define FFTBUFFER 512
 
 u_int8_t append(double *adc_val_in, u_int8_t *current_entry,  u_int16_t adcVal, u_int8_t *filled){
 
@@ -22,7 +22,7 @@ u_int8_t append(double *adc_val_in, u_int8_t *current_entry,  u_int16_t adcVal, 
 
 int main(int argc, char **argv) {
 
-	int SPI_fd,I2C_fd;
+	int SPI_fd,I2C_fd,i;
 	double adcVal;
 	u_int8_t i2cbuffer[17];
 
@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
 
 		//read adc val from SPI bus
 		adcVal = read_ADC(SPI_fd, &spi, data_in, data_out);
+//		printf("adcval: %lf\n", adcVal);
 		if(adcVal == -1) {
 			fprintf(stderr, "Error reading adc\n");
 			return -1;
@@ -70,10 +71,12 @@ int main(int argc, char **argv) {
 			fftw_execute(plan);
 
 			//refill array
+			fftw_destroy_plan(plan);
 			filled = 0;
 
+			for(i = 0; i<n_out; i++) printf("fft_out[%d]: %lf\n",i, fft_out[i][0]);
 		}
-
+		sleep(1);
 	}
 
 

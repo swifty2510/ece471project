@@ -17,7 +17,7 @@ double read_ADC(int SPI_fd, struct spi_ioc_transfer *spi, u_int8_t *data_in, u_i
         //start bit
         data_out[0]=1;
         //ch5 single ended
-        data_out[1]=0xD0;
+        data_out[1]=0xE0;
         data_out[2]=0;
         //send spi transaction
         result= ioctl(SPI_fd, SPI_IOC_MESSAGE(1), spi);
@@ -26,7 +26,8 @@ double read_ADC(int SPI_fd, struct spi_ioc_transfer *spi, u_int8_t *data_in, u_i
 		return -1.0;
 	}
         //get 10 bits of data
-	adcVal = data_in[2]+((data_in[1]&0x3)<<8);
+	printf("%d\n",( data_in[2]+((data_in[1]&0x3)<<8)));
+	adcVal = (double) ( data_in[2]+((data_in[1]&0x3)<<8));
 	return adcVal;
 
 }
@@ -45,7 +46,7 @@ int init_devices(int *SPI_fd, struct spi_ioc_transfer *spi, u_int8_t *data_out, 
        	spi->rx_buf = (u_int32_t)&data_in;
         spi->len = 3;
         spi->delay_usecs = 0;
-        spi->speed_hz = 1350000; //1.35MHz for 3.3V or 3.6MHz for 5v
+        spi->speed_hz = 100000; //1.35MHz for 3.3V or 3.6MHz for 5v
         spi->bits_per_word = 8;
         spi->cs_change = 0;
 
